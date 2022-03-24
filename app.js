@@ -11,34 +11,53 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
-app.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true});
+// Database Connectivity with localhost
+mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 
+// userSchema
 const userSchema = new mongoose.Schema({
     email: String,
     password: String
 });
-
 const User = new mongoose.model("user", userSchema);
 
+// secretSchema
+const secretSchema = new mongoose.Schema({
+    secret: String
+});
+const Secret = new mongoose.model("secret", secretSchema);
 
+//*******  All get methods *******//
+
+// Home Page
 app.get("/", (req, res) => {
     res.render("home");
 });
 
+// Login page
 app.get("/login", (req, res) => {
-    
     res.render("login");
 });
 
+// Submit page
+app.get("/submit", (req, res) => {
+    res.render("submit");
+});
+
+// Register Page
 app.get("/register", (req, res) => {
     res.render("register");
 });
 
+
+//*******  All post methods *******//
+
+// New User Registration
 app.post("/register", (req, res) => {
     const email = req.body.username;
     const password = req.body.password;
     
-    const newUser = new user({
+    const newUser = new User({
         email: email,
         password: password
     });
@@ -47,24 +66,32 @@ app.post("/register", (req, res) => {
     console.log("New User created successfully");
 });
 
+// User Authentication
 app.post("/login", (req, res) => {
     const email = req.body.username;
     const password = req.body.password;
-    User.findOne({ email: email }, (err, foundUser) => {
+    User.findOne({ email: email, password: password }, (err, foundUser) => {
         if (err) {
             console.log(err);
         } else {
             if (foundUser) {
-                if (foundUser.password === password) {
-                    res.render("secrets");
-                }
-            } else {
-                res.send("No user found");
+                res.render("secrets");
             }
         }
     });
 });
 
+// Submit Post
+app.post("/submit", (req, res) => {
+    var newSecret = req.body.secret;
+    var tempSecret = new Secret({
+        secret: newSecret
+    });
+    tempSecret.save();
+    res.render("Secret");
+});
+
+// ***** App Port Listen  *****//
 app.listen(port, () => {
     console.log(`Server started on port ${port}`);
 });
