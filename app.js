@@ -74,15 +74,20 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
     const email = req.body.username;
     const password = req.body.password;
-    User.findOne({ email: email, password: password }, (err, foundUser) => {
+    User.findOne({ email: email }, (err, foundUser) => {
         if (err) {
             console.log(err);
         } else {
             if (foundUser) {
-                res.render("secrets");
+                if (foundUser.password === password) {
+                    res.render("secrets");
+                }
             }
         }
-    });
+    }
+    );
+
+    // res.render("secrets");
 });
 
 // Submit Post
