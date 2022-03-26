@@ -2,16 +2,29 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const md5 = require("md5");
+const session = require("express-session");
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 const _ = require("lodash");
 const ejs = require("ejs");
 const port = process.env.PORT || 3000;
 
 const app = express();
-
+            
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
+
+// session creation
+app.use(session({
+    secret: "This is a secret",
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // Database Connectivity with localhost
 mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
