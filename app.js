@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
 const _ = require("lodash");
 const ejs = require("ejs");
 const port = process.env.PORT || 3000;
@@ -19,16 +19,14 @@ mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 // userSchema
 const userSchema = new mongoose.Schema({
     email: String,
-    password: String
+    password: String,
 });
 
-userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] });
 const User = new mongoose.model("user", userSchema);
-
 
 // secretSchema
 const secretSchema = new mongoose.Schema({
-    secret: String
+    secret: String,
 });
 const Secret = new mongoose.model("secret", secretSchema);
 
@@ -36,6 +34,7 @@ const Secret = new mongoose.model("secret", secretSchema);
 
 // Home Page
 app.get("/", (req, res) => {
+    console.log(md5("123456"));
     res.render("home");
 });
 
@@ -54,17 +53,16 @@ app.get("/register", (req, res) => {
     res.render("register");
 });
 
-
 //*******  All post methods *******//
 
 // New User Registration
 app.post("/register", (req, res) => {
     const email = req.body.username;
-    const password = req.body.password;
-    
+    const password = md5(req.body.password);
+
     const newUser = new User({
         email: email,
-        password: password
+        password: password,
     });
     newUser.save();
     res.render("secrets");
@@ -74,7 +72,7 @@ app.post("/register", (req, res) => {
 // User Authentication
 app.post("/login", (req, res) => {
     const email = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
     User.findOne({ email: email }, (err, foundUser) => {
         if (err) {
             console.log(err);
@@ -85,8 +83,7 @@ app.post("/login", (req, res) => {
                 }
             }
         }
-    }
-    );
+    });
 
     // res.render("secrets");
 });
@@ -95,7 +92,7 @@ app.post("/login", (req, res) => {
 app.post("/submit", (req, res) => {
     var newSecret = req.body.secret;
     var tempSecret = new Secret({
-        secret: newSecret
+        secret: newSecret,
     });
     tempSecret.save();
     res.render("Secret");
