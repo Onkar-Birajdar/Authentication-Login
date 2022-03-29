@@ -10,21 +10,22 @@ const ejs = require("ejs");
 const port = process.env.PORT || 3000;
 
 const app = express();
-            
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
 // session creation
-app.use(session({
-    secret: "This is a secret",
-    resave: false,
-    saveUninitialized: false
-}));
+app.use(
+    session({
+        secret: "This is a secret",
+        resave: false,
+        saveUninitialized: false,
+    })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
-
 
 // Database Connectivity with localhost
 mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
@@ -35,6 +36,8 @@ const userSchema = new mongoose.Schema({
     password: String,
 });
 
+userSchema.plugin(passportLocalMongoose);
+
 const User = new mongoose.model("user", userSchema);
 
 // secretSchema
@@ -43,11 +46,15 @@ const secretSchema = new mongoose.Schema({
 });
 const Secret = new mongoose.model("secret", secretSchema);
 
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 //*******  All get methods *******//
 
 // Home Page
 app.get("/", (req, res) => {
-    console.log(md5("123456"));
     res.render("home");
 });
 
@@ -66,39 +73,56 @@ app.get("/register", (req, res) => {
     res.render("register");
 });
 
+// Secret Page
+app.get("/secrets", (req, res) => {
+    if (req.isAuthenticated()) {
+        res.render("secrets");
+    } else {
+        res.redirect("/login");
+    }
+});
+
+//Logout Page
+app.get("/logout", (req, res) => {
+    req.logout();
+    res.redirect("/");
+    // res.render("logout");
+});
 //*******  All post methods *******//
 
 // New User Registration
 app.post("/register", (req, res) => {
-    const email = req.body.username;
-    const password = md5(req.body.password);
-
-    const newUser = new User({
-        email: email,
-        password: password,
-    });
-    newUser.save();
-    res.render("secrets");
-    console.log("New User created successfully");
+    User.register(
+        { username: req.body.username },
+        req.body.password,
+        (err, user) => {
+            if (err) {
+                console.log(err);
+                res.redirect("/register");
+            } else {
+                passport.authenticate("local")(req, res, () => {
+                    res.redirect("/secrets");
+                });
+            }
+        }
+    );
 });
 
 // User Authentication
 app.post("/login", (req, res) => {
-    const email = req.body.username;
-    const password = md5(req.body.password);
-    User.findOne({ email: email }, (err, foundUser) => {
+    var user = new User({
+        username: req.body.username,
+        password: req.body.password,
+    });
+    req.login(user, (err) => {
         if (err) {
             console.log(err);
         } else {
-            if (foundUser) {
-                if (foundUser.password === password) {
-                    res.render("secrets");
-                }
-            }
+            passport.authenticate("local")(req, res, () => {
+                res.redirect("/secrets");
+            });
         }
     });
-
-    // res.render("secrets");
 });
 
 // Submit Post
@@ -108,7 +132,7 @@ app.post("/submit", (req, res) => {
         secret: newSecret,
     });
     tempSecret.save();
-    res.render("Secret");
+    res.redirect("/secrets");
 });
 
 // ***** App Port Listen  *****//
