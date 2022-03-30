@@ -8,4 +8,6 @@ declare module 'mongoose-encryption';
 declare module 'passport';
 declare module 'passport-local';    
 declare module 'passport-local-mongoose';
+declare module 'passport-google-oauth20';
+declare module 'mongoose-findorcreate';
         
